@@ -1,0 +1,87 @@
+version: '3.4'
+services:
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.0.1
+    container_name: zookeeper
+    ports:
+      - '${PORT_ZOOKEEPER:-2181}:2181'
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-logs:/var/lib/zookeeper/log
+    environment:
+      ZOOKEEPER_CLIENT_PORT: '2181'
+      ZOOKEEPER_TICK_TIME: '2000'
+      ZOOKEEPER_LOG4J_ROOT_LOGLEVEL: 'WARN'
+
+  broker1:
+    image: confluentinc/cp-kafka:7.0.1
+    container_name: broker1
+    depends_on:
+      - zookeeper
+    ports:
+      - '${PORT_BROKER1:-29092}:29092'
+    volumes:
+      - broker1-data:/var/lib/kafka/data
+    environment:
+      KAFKA_BROKER_ID: '1'
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENERS: 'INTERNAL://broker1:9092,EXTERNAL://broker1:29092'
+      KAFKA_ADVERTISED_LISTENERS: 'INTERNAL://broker1:9092,EXTERNAL://localhost:${PORT_BROKER1:-29092}'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT'
+      KAFKA_SEGMENT_BYTES: '1048576' # roll log files when size >= 1MB (default 1GB) to showcase deletion
+      KAFKA_SEGMENT_MS: '300000'     # roll log files every 5 minutes (default 1 week) to showcase deletion 
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: '1'
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: '1'
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: '1'
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: '1'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'INTERNAL'
+      KAFKA_LOG4J_ROOT_LOGLEVEL: 'WARN'
+      KAFKA_LOG4J_LOGGERS: 'kafka=WARN,state.change.logger=WARN'
+  
+  kafka-ui:
+    image: provectuslabs/kafka-ui:0.3.3
+    container_name: kafka-ui
+    ports:
+      - '${PORT_KAFKA_UI:-28080}:8080'
+    depends_on:
+      - zookeeper
+      - broker1
+    environment:
+      KAFKA_CLUSTERS_0_NAME: 'cluster1'
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: 'broker1:9092'
+      KAFKA_CLUSTERS_0_ZOOKEEPER: 'zookeeper:2181'
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME: connect1
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS: http://connect1:8083
+      LOGGING_LEVEL_ROOT: 'WARN'
+      LOGGING_LEVEL_COM_PROVECTUS: 'WARN'
+
+  connect1:
+    image: confluentinc/cp-kafka-connect:7.0.1       # cp-kafka-connect-base is the same image
+    container_name: connect1                         # (cp-kafka-connect used to have pre-deployed plugins)
+    ports:
+      - '${PORT_CONNECT:-8083}:8083' # expose Kafka Connect port
+    volumes:
+      - connect1-plugins:/usr/share/confluent-hub-components  # volume for storing Kafka Connect plugins
+      - ./kafka-connect-entrypoint.sh:/entrypoint.sh          # to mount the custom entrypoint script
+    entrypoint: /entrypoint.sh                                # to run the script when the container starts
+    environment:
+      CONNECT_PLUGIN_PATH: '/usr/share/java,/usr/share/confluent-hub-components' # plugin locations
+      CONNECT_BOOTSTRAP_SERVERS: 'broker1:9092'
+      CONNECT_REST_PORT: '8083'
+      CONNECT_REST_ADVERTISED_HOST_NAME: 'connect1'
+      CONNECT_GROUP_ID: 'connectgroup1'                      # identifier for Kafka Connect cluster
+      CONNECT_CONFIG_STORAGE_TOPIC: '_connectgroup1_configs' # Kafka topics where Kafka Connect
+      CONNECT_OFFSET_STORAGE_TOPIC: '_connectgroup1_offset'  # stores its data
+      CONNECT_STATUS_STORAGE_TOPIC: '_connectgroup1_status'  #
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: '1'         # replication factor for internal topics
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: '1'         # must be 1 if we have only 1 broker
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: '1'         #
+      CONNECT_KEY_CONVERTER: 'org.apache.kafka.connect.json.JsonConverter'    # converters settings
+      CONNECT_VALUE_CONVERTER: 'org.apache.kafka.connect.json.JsonConverter'  # (see later)
+
+volumes:
+  zookeeper-data:
+  zookeeper-logs:
+  broker1-data:
+  connect1-plugins:
