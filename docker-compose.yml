@@ -80,8 +80,95 @@ services:
       CONNECT_KEY_CONVERTER: 'org.apache.kafka.connect.json.JsonConverter'    # converters settings
       CONNECT_VALUE_CONVERTER: 'org.apache.kafka.connect.json.JsonConverter'  # (see later)
 
+  spark-master:
+    image: docker.io/bitnami/spark:3.2.1
+    container_name: spark-master
+    depends_on:
+      - postgres
+      - broker1
+    ports:
+      - '${PORT_SPARK_MASTER:-8080}:8080'
+    user: root
+    volumes:
+      - .:/data
+      #- ./spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
+      #- ./jars_dir:/opt/bitnami/spark/ivy:z
+    environment:
+      SPARK_MODE: 'master'
+      PROCESSOR_BOOTSTRAP_SERVERS: 'broker1:9092'
+      PROCESSOR_DB_URL: 'jdbc:postgresql://postgres:5432/db'
+      PROCESSOR_DB_USERNAME: '${USERID:-user}'
+      PROCESSOR_DB_PASSWORD: '${USERPWD:-user}'
+    command: [ "/opt/bitnami/scripts/spark/run.sh" ]
+    entrypoint: /data/spark-master-entrypoint.sh
+  
+  spark-worker:
+    image: docker.io/bitnami/spark:3.2.1
+    container_name: spark-worker
+    ports:
+         - '${PORT_SPARK_WORKER:-8081}:8081'
+    environment:
+      SPARK_MODE: 'worker'
+      SPARK_MASTER_URL: 'spark://spark-master:7077'
+      # SPARK_WORKER_MEMORY: '2G' # for further
+      # SPARK_WORKER_CORES: '4'   # customization
+  
+  postgres:
+    image: postgres:14-alpine
+    container_name: postgres
+    ports:
+      - '${PORT_POSTGRES:-25432}:5432'
+    volumes:
+      - ./postgres:/docker-entrypoint-initdb.d
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: 'db'
+      POSTGRES_USER: '${USERID:-user}'
+      POSTGRES_PASSWORD: '${USERPWD:-user}'
+
+  pgadmin:
+    image: dpage/pgadmin4:6.8
+    container_name: pgadmin
+    depends_on:
+      - postgres
+    ports:
+      - '${PORT_PGADMIN:-20080}:80'
+    volumes:
+      - ./pgadmin4/servers.json:/pgadmin4/servers.json
+      - pgadmin-data:/var/lib/pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${USEREMAIL:-user@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${USERPWD:-user}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      GUNICORN_ACCESS_LOGFILE: '/dev/null'
+
+  grafana:
+    image: grafana/grafana-oss:8.4.5
+    container_name: grafana
+    depends_on:
+      - postgres
+    ports:
+      - '${PORT_GRAFANA:-23000}:3000'
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana:/etc/grafana/provisioning:Z
+    environment:
+      GRAFANA_HOST: 'grafana'
+      GF_SECURITY_ADMIN_USER: '${USERID:-user}'
+      GF_SECURITY_ADMIN_PASSWORD: '${USERID:-user}'
+      GF_USERS_DEFAULT_THEME: 'light'
+      GF_LOG_LEVEL: 'WARN'
+      GF_INSTALL_PLUGINS: 'magnesium-wordcloud-panel'
+      DB_ADDR: 'postgres:5432'
+      DB_NAME: 'db'
+      DB_USERID: '${USERID:-user}'
+      DB_USERPWD: '${USERPWD:-user}'
+
 volumes:
   zookeeper-data:
   zookeeper-logs:
   broker1-data:
   connect1-plugins:
+  grafana-data:
+  postgres-data:
+  pgadmin-data:

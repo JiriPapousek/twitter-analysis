@@ -1,0 +1,727 @@
+{
+  "fields": [
+    {
+      "metadata": {},
+      "name": "Contributors",
+      "nullable": true,
+      "type": {
+        "containsNull": true,
+        "elementType": "string",
+        "type": "array"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "CreatedAt",
+      "nullable": true,
+      "type": "long"
+    },
+    {
+      "metadata": {},
+      "name": "CurrentUserRetweetId",
+      "nullable": true,
+      "type": "long"
+    },
+    {
+      "metadata": {},
+      "name": "FavoriteCount",
+      "nullable": true,
+      "type": "long"
+    },
+    {
+      "metadata": {},
+      "name": "Favorited",
+      "nullable": true,
+      "type": "boolean"
+    },
+    {
+      "metadata": {},
+      "name": "GeoLocation",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "HashtagEntities",
+      "nullable": true,
+      "type": {
+        "containsNull": true,
+        "elementType": {
+          "fields": [
+            {
+              "metadata": {},
+              "name": "End",
+              "nullable": true,
+              "type": "long"
+            },
+            {
+              "metadata": {},
+              "name": "Start",
+              "nullable": true,
+              "type": "long"
+            },
+            {
+              "metadata": {},
+              "name": "Text",
+              "nullable": true,
+              "type": "string"
+            }
+          ],
+          "type": "struct"
+        },
+        "type": "array"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "Id",
+      "nullable": true,
+      "type": "long"
+    },
+    {
+      "metadata": {},
+      "name": "InReplyToScreenName",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "InReplyToStatusId",
+      "nullable": true,
+      "type": "long"
+    },
+    {
+      "metadata": {},
+      "name": "InReplyToUserId",
+      "nullable": true,
+      "type": "long"
+    },
+    {
+      "metadata": {},
+      "name": "Lang",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "MediaEntities",
+      "nullable": true,
+      "type": {
+        "containsNull": true,
+        "elementType": {
+          "fields": [
+            {
+              "metadata": {},
+              "name": "DisplayURL",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "End",
+              "nullable": true,
+              "type": "long"
+            },
+            {
+              "metadata": {},
+              "name": "ExpandedURL",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "ExtAltText",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "Id",
+              "nullable": true,
+              "type": "long"
+            },
+            {
+              "metadata": {},
+              "name": "MediaURL",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "MediaURLHttps",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "Sizes",
+              "nullable": true,
+              "type": {
+                "containsNull": true,
+                "elementType": {
+                  "containsNull": true,
+                  "elementType": "string",
+                  "type": "array"
+                },
+                "type": "array"
+              }
+            },
+            {
+              "metadata": {},
+              "name": "Start",
+              "nullable": true,
+              "type": "long"
+            },
+            {
+              "metadata": {},
+              "name": "Text",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "Type",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "URL",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "VideoAspectRatioHeight",
+              "nullable": true,
+              "type": "long"
+            },
+            {
+              "metadata": {},
+              "name": "VideoAspectRatioWidth",
+              "nullable": true,
+              "type": "long"
+            },
+            {
+              "metadata": {},
+              "name": "VideoDurationMillis",
+              "nullable": true,
+              "type": "long"
+            },
+            {
+              "metadata": {},
+              "name": "VideoVariants",
+              "nullable": true,
+              "type": {
+                "containsNull": true,
+                "elementType": {
+                  "fields": [
+                    {
+                      "metadata": {},
+                      "name": "Bitrate",
+                      "nullable": true,
+                      "type": "long"
+                    },
+                    {
+                      "metadata": {},
+                      "name": "ContentType",
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    {
+                      "metadata": {},
+                      "name": "Url",
+                      "nullable": true,
+                      "type": "string"
+                    }
+                  ],
+                  "type": "struct"
+                },
+                "type": "array"
+              }
+            }
+          ],
+          "type": "struct"
+        },
+        "type": "array"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "Place",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "PossiblySensitive",
+      "nullable": true,
+      "type": "boolean"
+    },
+    {
+      "metadata": {},
+      "name": "Retweet",
+      "nullable": true,
+      "type": "boolean"
+    },
+    {
+      "metadata": {},
+      "name": "RetweetCount",
+      "nullable": true,
+      "type": "long"
+    },
+    {
+      "metadata": {},
+      "name": "Retweeted",
+      "nullable": true,
+      "type": "boolean"
+    },
+    {
+      "metadata": {},
+      "name": "RetweetedByMe",
+      "nullable": true,
+      "type": "boolean"
+    },
+    {
+      "metadata": {},
+      "name": "Source",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "SymbolEntities",
+      "nullable": true,
+      "type": {
+        "containsNull": true,
+        "elementType": "string",
+        "type": "array"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "Text",
+      "nullable": true,
+      "type": "string"
+    },
+    {
+      "metadata": {},
+      "name": "Truncated",
+      "nullable": true,
+      "type": "boolean"
+    },
+    {
+      "metadata": {},
+      "name": "URLEntities",
+      "nullable": true,
+      "type": {
+        "containsNull": true,
+        "elementType": {
+          "fields": [
+            {
+              "metadata": {},
+              "name": "DisplayURL",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "End",
+              "nullable": true,
+              "type": "long"
+            },
+            {
+              "metadata": {},
+              "name": "ExpandedURL",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "Start",
+              "nullable": true,
+              "type": "long"
+            },
+            {
+              "metadata": {},
+              "name": "Text",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "URL",
+              "nullable": true,
+              "type": "string"
+            }
+          ],
+          "type": "struct"
+        },
+        "type": "array"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "User",
+      "nullable": true,
+      "type": {
+        "fields": [
+          {
+            "metadata": {},
+            "name": "BiggerProfileImageURL",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "BiggerProfileImageURLHttps",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "ContributorsEnabled",
+            "nullable": true,
+            "type": "boolean"
+          },
+          {
+            "metadata": {},
+            "name": "CreatedAt",
+            "nullable": true,
+            "type": "long"
+          },
+          {
+            "metadata": {},
+            "name": "DefaultProfile",
+            "nullable": true,
+            "type": "boolean"
+          },
+          {
+            "metadata": {},
+            "name": "DefaultProfileImage",
+            "nullable": true,
+            "type": "boolean"
+          },
+          {
+            "metadata": {},
+            "name": "Description",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "FavouritesCount",
+            "nullable": true,
+            "type": "long"
+          },
+          {
+            "metadata": {},
+            "name": "FollowRequestSent",
+            "nullable": true,
+            "type": "boolean"
+          },
+          {
+            "metadata": {},
+            "name": "FollowersCount",
+            "nullable": true,
+            "type": "long"
+          },
+          {
+            "metadata": {},
+            "name": "FriendsCount",
+            "nullable": true,
+            "type": "long"
+          },
+          {
+            "metadata": {},
+            "name": "GeoEnabled",
+            "nullable": true,
+            "type": "boolean"
+          },
+          {
+            "metadata": {},
+            "name": "Id",
+            "nullable": true,
+            "type": "long"
+          },
+          {
+            "metadata": {},
+            "name": "Lang",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "ListedCount",
+            "nullable": true,
+            "type": "long"
+          },
+          {
+            "metadata": {},
+            "name": "Location",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "MiniProfileImageURL",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "MiniProfileImageURLHttps",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "Name",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "OriginalProfileImageURL",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "OriginalProfileImageURLHttps",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "ProfileBackgroundColor",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "ProfileBackgroundImageURL",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "ProfileBackgroundImageUrlHttps",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "ProfileBackgroundTiled",
+            "nullable": true,
+            "type": "boolean"
+          },
+          {
+            "metadata": {},
+            "name": "ProfileBannerIPadRetinaURL",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "ProfileBannerIPadURL",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "ProfileBannerMobileRetinaURL",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "ProfileBannerMobileURL",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "ProfileBannerRetinaURL",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "ProfileBannerURL",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "ProfileImageURL",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "ProfileImageURLHttps",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "ProfileLinkColor",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "ProfileSidebarBorderColor",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "ProfileSidebarFillColor",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "ProfileTextColor",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "ProfileUseBackgroundImage",
+            "nullable": true,
+            "type": "boolean"
+          },
+          {
+            "metadata": {},
+            "name": "Protected",
+            "nullable": true,
+            "type": "boolean"
+          },
+          {
+            "metadata": {},
+            "name": "ScreenName",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "ShowAllInlineMedia",
+            "nullable": true,
+            "type": "boolean"
+          },
+          {
+            "metadata": {},
+            "name": "StatusesCount",
+            "nullable": true,
+            "type": "long"
+          },
+          {
+            "metadata": {},
+            "name": "TimeZone",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "Translator",
+            "nullable": true,
+            "type": "boolean"
+          },
+          {
+            "metadata": {},
+            "name": "URL",
+            "nullable": true,
+            "type": "string"
+          },
+          {
+            "metadata": {},
+            "name": "UtcOffset",
+            "nullable": true,
+            "type": "long"
+          },
+          {
+            "metadata": {},
+            "name": "Verified",
+            "nullable": true,
+            "type": "boolean"
+          },
+          {
+            "metadata": {},
+            "name": "WithheldInCountries",
+            "nullable": true,
+            "type": {
+              "containsNull": true,
+              "elementType": "string",
+              "type": "array"
+            }
+          }
+        ],
+        "type": "struct"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "UserMentionEntities",
+      "nullable": true,
+      "type": {
+        "containsNull": true,
+        "elementType": {
+          "fields": [
+            {
+              "metadata": {},
+              "name": "End",
+              "nullable": true,
+              "type": "long"
+            },
+            {
+              "metadata": {},
+              "name": "Id",
+              "nullable": true,
+              "type": "long"
+            },
+            {
+              "metadata": {},
+              "name": "Name",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "ScreenName",
+              "nullable": true,
+              "type": "string"
+            },
+            {
+              "metadata": {},
+              "name": "Start",
+              "nullable": true,
+              "type": "long"
+            },
+            {
+              "metadata": {},
+              "name": "Text",
+              "nullable": true,
+              "type": "string"
+            }
+          ],
+          "type": "struct"
+        },
+        "type": "array"
+      }
+    },
+    {
+      "metadata": {},
+      "name": "WithheldInCountries",
+      "nullable": true,
+      "type": {
+        "containsNull": true,
+        "elementType": "string",
+        "type": "array"
+      }
+    }
+  ],
+  "type": "struct"
+}
