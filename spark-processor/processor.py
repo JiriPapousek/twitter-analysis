@@ -62,6 +62,13 @@ class TweetProcessor:
                 .agg(F.count("*").alias("num")) \
                 .select(F.col("num"))
 
+    def retrieve_tweet_counts_per_minute(self, tweets):
+        return tweets \
+                .withWatermark("CreatedAt", "1 minute") \
+                .groupBy(F.window(timeColumn="CreatedAt", windowDuration="1 minute", slideDuration="1 minute")) \
+                .agg(F.count("*").alias("num")) \
+                .select(F.col("num"), F.col("window.start").alias("window_start"), F.col("window.end").alias("window_end"))
+
     def write_output_data_console(self, data, write_mode, trigger_time):
         return data \
                .writeStream \
@@ -81,6 +88,13 @@ class TweetProcessor:
                                           "append",
                                           "overwrite",
                                           "10 seconds")
+
+        tweet_counts_per_minute = self.retrieve_tweet_counts_per_minute(tweets)
+        self.write_output_data_postgresql(tweet_counts_per_minute,
+                                          "tweet_counts_per_minute",
+                                          "complete",
+                                          "overwrite",
+                                          "1 minute")
 
         hashtag_counts = self.retrieve_hashtag_counts(tweets)
         self.write_output_data_postgresql(hashtag_counts, 
