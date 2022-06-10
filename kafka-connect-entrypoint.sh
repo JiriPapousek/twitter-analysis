@@ -10,6 +10,7 @@ function deploy_connectors {
         "connector.class": "com.github.jcustenborder.kafka.connect.twitter.TwitterSourceConnector",
         "twitter.oauth.accessTokenSecret": "",
         "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+        "value.converter.schemas.enable": "false",
         "process.deletes": "true",
         "filter.keywords": "ukraine",
         "kafka.status.topic": "tweets",

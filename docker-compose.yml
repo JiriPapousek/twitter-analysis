@@ -88,7 +88,6 @@ services:
       - broker1
     ports:
       - '${PORT_SPARK_MASTER:-8080}:8080'
-    user: root
     volumes:
       - .:/data
       #- ./spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
@@ -99,8 +98,6 @@ services:
       PROCESSOR_DB_URL: 'jdbc:postgresql://postgres:5432/db'
       PROCESSOR_DB_USERNAME: '${USERID:-user}'
       PROCESSOR_DB_PASSWORD: '${USERPWD:-user}'
-    command: [ "/opt/bitnami/scripts/spark/run.sh" ]
-    entrypoint: /data/spark-master-entrypoint.sh
   
   spark-worker:
     image: docker.io/bitnami/spark:3.2.1
@@ -110,8 +107,23 @@ services:
     environment:
       SPARK_MODE: 'worker'
       SPARK_MASTER_URL: 'spark://spark-master:7077'
-      # SPARK_WORKER_MEMORY: '2G' # for further
-      # SPARK_WORKER_CORES: '4'   # customization
+  
+  processor-python:
+    build: spark-processor
+    image: spark-processor:latest
+    container_name: processor
+    depends_on:
+      - spark-master
+      - postgres
+      - broker1
+    ports:
+      - '${PORT_PROCESSOR_SPARK_UI:-4040}:4040'
+    environment:
+      PROCESSOR_MASTER: 'spark://spark-master:7077'
+      PROCESSOR_IMPLEMENTATION: '${PROCESSOR_IMPLEMENTATION_PYTHON:-processor.py}'
+      PROCESSOR_BOOTSTRAP_SERVERS: 'broker1:9092'
+      PROCESSOR_PACKAGES: 'org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.1,org.postgresql:postgresql:42.3.5'
+      PROCESSOR_ARGS: '--db-url jdbc:postgresql://postgres:5432/db --db-user user --db-password user'  # use '--dry-run' for printing to stdout instead of writing to Kafka
   
   postgres:
     image: postgres:14-alpine

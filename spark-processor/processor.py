@@ -1,11 +1,34 @@
 import os
 import json
+import locationtagger
 
 from argparse import ArgumentParser
 from pyspark.sql import SparkSession
-from pyspark.sql.types import StructType
+from pyspark.sql.types import *
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
+
+WINDOW_SIZE = "10 minute"
+UPDATE_PERIOD = "60 seconds"
+
+
+# because of some serialization error when putting this into udf() 
+# this cannot be a method of the TweetProcessor class
+def get_nationality(location_text: str) -> str:
+    if location_text is not None:
+        locations = locationtagger.find_locations(text = location_text)
+
+        # primarily get country from its mention in the text
+        countries = locations.countries
+
+        # otherwise, get country from whatever else (city, region)
+        if len(countries) == 0:
+            countries = locations.other_countries
+    else:
+        countries = ["Unknown"]
+
+    # sometimes we get more estimated nationalities - in that case we take the first one
+    return countries[0] if len(countries) != 0 else "Unknown"
 
 
 class TweetProcessor:
@@ -20,8 +43,9 @@ class TweetProcessor:
                              .appName("processor") \
                              .config("spark.sql.shuffle.partitions", 4) \
                              .config("spark.sql.streaming.checkpointLocation", "/tmp/spark-checkpoint") \
-                             .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.1, org.postgresql:postgresql:42.3.5") \
+                             .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.1,org.postgresql:postgresql:42.3.5") \
                              .getOrCreate()
+
         self.db_url = args.db_url
         self.db_user = args.db_user
         self.db_password = args.db_password
@@ -45,20 +69,26 @@ class TweetProcessor:
                .select(F.col("value")) \
                .select(F.from_json(F.col("value"), schema=self.tweet_schema).alias("data")) \
                .select("data.*") \
-               .withColumn("CreatedAt", F.from_unixtime(F.col("CreatedAt") / 1000).cast("timestamp"))
+               .withColumn("CreatedAt", F.from_unixtime(F.col("CreatedAt") / 1000).cast("timestamp")) \
+               .withColumn("nationality", F.udf(get_nationality, StringType())("User.Location"))
 
-    def retrieve_hashtag_counts(self, tweets):
+    def get_pipeline(self):
+        document_assembler = DocumentAssembler() \
+            .setInputCol("text") \
+            .setOutputCol("document")
+
+    def retrieve_recent_hashtag_counts(self, tweets):
         return tweets \
-                .withWatermark("CreatedAt", "1 minute") \
+                .withWatermark("CreatedAt", WINDOW_SIZE) \
                 .withColumn("hashtag", F.explode("HashtagEntities.Text")) \
-                .groupBy("hashtag", F.window(timeColumn="CreatedAt", windowDuration="1 minute", slideDuration="10 seconds")) \
-                .agg(F.count("*").alias("num")) \
-                .select(F.col("num"), F.col("hashtag"))
+                .groupBy("hashtag", F.window(timeColumn="CreatedAt", windowDuration=WINDOW_SIZE, slideDuration=UPDATE_PERIOD)) \
+                .agg(F.count("*").alias("num"), F.min("window.start").alias("min_start")) \
+                .select(F.col("num"), F.col("window.start"), F.col("window.end"), F.col("min_start"), F.col("hashtag"))
 
-    def retrieve_total_tweet_count(self, tweets):
+    def retrieve_recent_tweet_count(self, tweets):
         return tweets \
-                .withWatermark("CreatedAt", "1 minute") \
-                .groupBy(F.window(timeColumn="CreatedAt", windowDuration="1 minute", slideDuration="10 seconds")) \
+                .withWatermark("CreatedAt", WINDOW_SIZE) \
+                .groupBy(F.window(timeColumn="CreatedAt", windowDuration=WINDOW_SIZE, slideDuration=UPDATE_PERIOD)) \
                 .agg(F.count("*").alias("num")) \
                 .select(F.col("num"))
 
@@ -69,6 +99,19 @@ class TweetProcessor:
                 .agg(F.count("*").alias("num")) \
                 .select(F.col("num"), F.col("window.start").alias("window_start"), F.col("window.end").alias("window_end"))
 
+    def retrieve_recent_tweet_counts_by_nationality(self, tweets):
+        return tweets \
+                .withWatermark("CreatedAt", WINDOW_SIZE) \
+                .groupBy("nationality", F.window(timeColumn="CreatedAt", windowDuration=WINDOW_SIZE, slideDuration=UPDATE_PERIOD)) \
+                .agg(F.count("*").alias("num"), F.min("window.start").alias("min_start")) \
+                .select(F.col("num"), F.col("window.start"), F.col("window.end"), F.col("min_start"), F.col("nationality"))
+
+    def retrieve_recent_russian_hashtag_counts(self, tweets):
+        return self.retrieve_recent_hashtag_counts(tweets.filter(F.col("nationality") == "Russia"))
+
+    def retrieve_recent_ukrainian_hashtag_counts(self, tweets):
+        return self.retrieve_recent_hashtag_counts(tweets.filter(F.col("nationality") == "Ukraine"))
+
     def write_output_data_console(self, data, write_mode, trigger_time):
         return data \
                .writeStream \
@@ -77,17 +120,16 @@ class TweetProcessor:
                .option("truncate", "false") \
                .trigger(processingTime=trigger_time) \
                .start()
-
               
     def process(self):
         tweets = self.load_tweets()
 
-        total_tweet_count = self.retrieve_total_tweet_count(tweets)
+        total_tweet_count = self.retrieve_recent_tweet_count(tweets)
         self.write_output_data_postgresql(total_tweet_count,
                                           "total_tweet_count",
                                           "append",
                                           "overwrite",
-                                          "10 seconds")
+                                          UPDATE_PERIOD)
 
         tweet_counts_per_minute = self.retrieve_tweet_counts_per_minute(tweets)
         self.write_output_data_postgresql(tweet_counts_per_minute,
@@ -96,12 +138,33 @@ class TweetProcessor:
                                           "overwrite",
                                           "1 minute")
 
-        hashtag_counts = self.retrieve_hashtag_counts(tweets)
+        hashtag_counts = self.retrieve_recent_hashtag_counts(tweets)
         self.write_output_data_postgresql(hashtag_counts, 
                                           "hashtag_counts", 
                                           "append", 
                                           "overwrite", 
-                                          "10 seconds")
+                                          UPDATE_PERIOD)
+
+        nationality_counts = self.retrieve_recent_tweet_counts_by_nationality(tweets)
+        self.write_output_data_postgresql(nationality_counts,
+                                          "nationality_counts",
+                                          "append",
+                                          "overwrite",
+                                          UPDATE_PERIOD)
+
+        russian_hashtag_counts = self.retrieve_recent_russian_hashtag_counts(tweets)
+        self.write_output_data_postgresql(russian_hashtag_counts,
+                                          "russian_hashtag_counts",
+                                          "append",
+                                          "overwrite",
+                                          UPDATE_PERIOD)
+
+        russian_hashtag_counts = self.retrieve_recent_ukrainian_hashtag_counts(tweets)
+        self.write_output_data_postgresql(russian_hashtag_counts,
+                                          "ukrainian_hashtag_counts",
+                                          "append",
+                                          "overwrite",
+                                          UPDATE_PERIOD)
 
         self.spark_session.streams.awaitAnyTermination()
 
