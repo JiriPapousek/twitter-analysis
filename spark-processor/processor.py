@@ -1,6 +1,7 @@
 import os
 import json
 import locationtagger
+import pandas as pd
 
 from argparse import ArgumentParser
 from pyspark.sql import SparkSession
@@ -12,23 +13,25 @@ WINDOW_SIZE = "10 minute"
 UPDATE_PERIOD = "60 seconds"
 
 
-# because of some serialization error when putting this into udf() 
+# because of some serialization error when putting this into pandas_udf() 
 # this cannot be a method of the TweetProcessor class
-def get_nationality(location_text: str) -> str:
-    if location_text is not None:
-        locations = locationtagger.find_locations(text = location_text)
+def get_nationality(location: pd.Series) -> pd.Series:
+    def get_nationality_for_row(location_text: str) -> str:
+        if location_text is not None:
+            locations = locationtagger.find_locations(text = location_text)
 
-        # primarily get country from its mention in the text
-        countries = locations.countries
+            # primarily get country from its mention in the text
+            countries = locations.countries
 
-        # otherwise, get country from whatever else (city, region)
-        if len(countries) == 0:
-            countries = locations.other_countries
-    else:
-        countries = ["Unknown"]
+            # otherwise, get country from whatever else (city, region)
+            if len(countries) == 0:
+                countries = locations.other_countries
+        else:
+            countries = ["Unknown"]
 
-    # sometimes we get more estimated nationalities - in that case we take the first one
-    return countries[0] if len(countries) != 0 else "Unknown"
+        # sometimes we get more estimated nationalities - in that case we take the first one
+        return countries[0] if len(countries) != 0 else "Unknown"
+    return location.apply(get_nationality_for_row)
 
 
 class TweetProcessor:
@@ -70,7 +73,7 @@ class TweetProcessor:
                .select(F.from_json(F.col("value"), schema=self.tweet_schema).alias("data")) \
                .select("data.*") \
                .withColumn("CreatedAt", F.from_unixtime(F.col("CreatedAt") / 1000).cast("timestamp")) \
-               .withColumn("nationality", F.udf(get_nationality, StringType())("User.Location"))
+               .withColumn("nationality", F.pandas_udf(get_nationality, StringType())("User.Location"))
 
     def get_pipeline(self):
         document_assembler = DocumentAssembler() \
@@ -106,8 +109,6 @@ class TweetProcessor:
                 .agg(F.count("*").alias("num"), F.min("window.start").alias("min_start")) \
                 .select(F.col("num"), F.col("window.start"), F.col("window.end"), F.col("min_start"), F.col("nationality"))
 
-    def retrieve_recent_russian_hashtag_counts(self, tweets):
-        return self.retrieve_recent_hashtag_counts(tweets.filter(F.col("nationality") == "Russia"))
 
     def retrieve_recent_ukrainian_hashtag_counts(self, tweets):
         return self.retrieve_recent_hashtag_counts(tweets.filter(F.col("nationality") == "Ukraine"))
@@ -152,15 +153,8 @@ class TweetProcessor:
                                           "overwrite",
                                           UPDATE_PERIOD)
 
-        russian_hashtag_counts = self.retrieve_recent_russian_hashtag_counts(tweets)
-        self.write_output_data_postgresql(russian_hashtag_counts,
-                                          "russian_hashtag_counts",
-                                          "append",
-                                          "overwrite",
-                                          UPDATE_PERIOD)
-
-        russian_hashtag_counts = self.retrieve_recent_ukrainian_hashtag_counts(tweets)
-        self.write_output_data_postgresql(russian_hashtag_counts,
+        ukrainian_hashtag_counts = self.retrieve_recent_ukrainian_hashtag_counts(tweets)
+        self.write_output_data_postgresql(ukrainian_hashtag_counts,
                                           "ukrainian_hashtag_counts",
                                           "append",
                                           "overwrite",
