@@ -1,4 +1,5 @@
 locationtagger==0.0.1
 pandas==1.4.2
+spark-nlp==3.4.4
 pyspark==3.2.1
 pyarrow>=1.0.0

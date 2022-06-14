@@ -1,16 +1,20 @@
+import sys
 import os
 import json
 import locationtagger
 import pandas as pd
+import sparknlp
 
+from pyspark.ml.feature import SQLTransformer
+from sparknlp.pretrained import PretrainedPipeline
 from argparse import ArgumentParser
 from pyspark.sql import SparkSession
 from pyspark.sql.types import *
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
 
-WINDOW_SIZE = "10 minute"
-UPDATE_PERIOD = "60 seconds"
+WINDOW_SIZE = "1 minute"
+UPDATE_PERIOD = "30 seconds"
 
 
 # because of some serialization error when putting this into pandas_udf() 
@@ -46,7 +50,7 @@ class TweetProcessor:
                              .appName("processor") \
                              .config("spark.sql.shuffle.partitions", 4) \
                              .config("spark.sql.streaming.checkpointLocation", "/tmp/spark-checkpoint") \
-                             .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.1,org.postgresql:postgresql:42.3.5") \
+                             .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.1,org.postgresql:postgresql:42.3.5,com.johnsnowlabs.nlp:spark-nlp-spark32_2.12:3.4.4") \
                              .getOrCreate()
 
         self.db_url = args.db_url
@@ -61,7 +65,8 @@ class TweetProcessor:
         return schema
 
     def load_tweets(self):
-        return self.spark_session \
+
+        tweets =  self.spark_session \
                .readStream \
                .format("kafka") \
                .option("startingOffsets", "earliest") \
@@ -73,12 +78,17 @@ class TweetProcessor:
                .select(F.from_json(F.col("value"), schema=self.tweet_schema).alias("data")) \
                .select("data.*") \
                .withColumn("CreatedAt", F.from_unixtime(F.col("CreatedAt") / 1000).cast("timestamp")) \
-               .withColumn("nationality", F.pandas_udf(get_nationality, StringType())("User.Location"))
+               .withColumnRenamed("Text", "TweetText") \
+               .withColumn("text", F.col("User.Location"))
 
-    def get_pipeline(self):
-        document_assembler = DocumentAssembler() \
-            .setInputCol("text") \
-            .setOutputCol("document")
+        pipeline = PretrainedPipeline.from_disk("/models/translate_mul_en_xx_3.1.0_2.4_1622843259436")
+        annotations = pipeline.transform(tweets)
+        
+        translations = SQLTransformer() \
+            .setStatement("SELECT *, CAST(element_at(translation, 1).result AS STRING) AS value FROM __THIS__") \
+            .transform(annotations)
+
+        return translations
 
     def retrieve_recent_hashtag_counts(self, tweets):
         return tweets \
@@ -124,7 +134,9 @@ class TweetProcessor:
               
     def process(self):
         tweets = self.load_tweets()
+        self.write_output_data_console(tweets, "append", "1 second")
 
+        """
         total_tweet_count = self.retrieve_recent_tweet_count(tweets)
         self.write_output_data_postgresql(total_tweet_count,
                                           "total_tweet_count",
@@ -159,7 +171,7 @@ class TweetProcessor:
                                           "append",
                                           "overwrite",
                                           UPDATE_PERIOD)
-
+        """
         self.spark_session.streams.awaitAnyTermination()
 
     def write_output_data_postgresql(self, data, output_table, write_mode, batch_write_mode, trigger_time):
@@ -194,7 +206,6 @@ def main():
     parser.add_argument("--db-url", default="jdbc:postgresql://localhost:5432/db", help="PostgreSQL database URL used as an output sink", type=str)
     parser.add_argument("--db-user", default="user", help="Username used for connection to PostgreSQL database", type=str)
     parser.add_argument("--db-password", default="user", help="Password used for connection to PostgreSQL database", type=str)
-    parser.add_argument("--dry-run", help="print results to stdout instead of writing them back to Kafka", action="store_true")
     args = parser.parse_args()
 
     processor = TweetProcessor(args)

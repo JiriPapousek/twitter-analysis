@@ -90,6 +90,7 @@ services:
       - '${PORT_SPARK_MASTER:-8080}:8080'
     volumes:
       - .:/data
+      - ./models:/models
       #- ./spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
       #- ./jars_dir:/opt/bitnami/spark/ivy:z
     environment:
@@ -104,10 +105,12 @@ services:
     container_name: spark-worker
     ports:
          - '${PORT_SPARK_WORKER:-8081}:8081'
+    volumes:
+      - ./models:/models
     environment:
       SPARK_MODE: 'worker'
       SPARK_MASTER_URL: 'spark://spark-master:7077'
-  
+
   processor-python:
     build: spark-processor
     image: spark-processor:latest
@@ -118,11 +121,13 @@ services:
       - broker1
     ports:
       - '${PORT_PROCESSOR_SPARK_UI:-4040}:4040'
+    volumes:
+      - ./models:/models
     environment:
       PROCESSOR_MASTER: 'spark://spark-master:7077'
       PROCESSOR_IMPLEMENTATION: '${PROCESSOR_IMPLEMENTATION_PYTHON:-processor.py}'
       PROCESSOR_BOOTSTRAP_SERVERS: 'broker1:9092'
-      PROCESSOR_PACKAGES: 'org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.1,org.postgresql:postgresql:42.3.5'
+      PROCESSOR_PACKAGES: 'org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.1,org.postgresql:postgresql:42.3.5,com.johnsnowlabs.nlp:spark-nlp-spark32_2.12:3.4.4'
       PROCESSOR_ARGS: '--db-url jdbc:postgresql://postgres:5432/db --db-user user --db-password user'  # use '--dry-run' for printing to stdout instead of writing to Kafka
   
   postgres:
