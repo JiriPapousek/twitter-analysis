@@ -19,3 +19,8 @@ docker-compose up --build
 The visualisations will be then available on Grafana dashboard at [localhost:23000](http://localhost:23000). By default you can access this dashboard under user 'user' with password 'user'.
 
 Please mind that it will take some time (approximately 10 minutes since the pipeline has been started) before first results appear in the dashboard. This is caused by the set watermark in the Spark processor.
+
+After a while, you should see something like this:
+
+![dashboard](./images/dashboard.png)
+
